@@ -576,3 +576,167 @@ MySQL Directo: mysql -h TU_VPS_IP -P 3306 -u root -p
 PHPMyAdmin: http://TU_VPS_IP:8080 (si lo incluyes en docker-compose)
 
 Tu API NestJS: http://TU_VPS_IP:3000
+
+# 🔧 Instalar Docker Compose Plugin en Ubuntu
+Método 1: Instalar como plugin (Recomendado)
+bash
+## Actualizar lista de paquetes
+```
+sudo apt update
+```
+## Instalar docker-compose-plugin
+```
+sudo apt install docker-compose-plugin
+```
+
+## Verificar instalación
+```
+docker compose version
+```
+Método 2: Instalación manual (alternativa)
+bash
+## Descargar la versión más reciente
+```
+mkdir -p ~/.docker/cli-plugins
+curl -SL https://github.com/docker/compose/releases/latest/download/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
+```
+## Dar permisos de ejecución
+```
+chmod +x ~/.docker/cli-plugins/docker-compose
+```
+## Verificar
+```
+docker compose version
+```
+# 🔄 Cambios en los comandos
+Vieja sintaxis (obsoleta):
+bash
+```
+docker-compose up -d
+docker-compose down
+docker-compose ps
+```
+Nueva sintaxis (con plugin):
+bash
+```
+docker compose up -d
+docker compose down
+docker compose ps
+```
+Nota: La diferencia es el guión docker-compose vs docker compose
+
+# 📝 Actualizar nuestros archivos anteriores
+En tu VPS, ejecutar:
+bash
+## 1. Instalar docker-compose-plugin
+```
+sudo apt install docker-compose-plugin
+```
+
+## 2. Navegar al directorio de MySQL
+```
+cd ~/mysql-docker
+```
+
+## 3. Usar la nueva sintaxis
+```
+docker compose up -d
+```
+
+## 4. Verificar
+```
+docker compose ps
+```
+# 🐛 Si encuentras errores:
+Error: "docker compose command not found"
+bash
+## Verificar si está instalado
+```
+apt list --installed | grep compose
+```
+
+## Si no está, instalar:
+```
+sudo apt install docker-compose-plugin
+```
+
+## O instalar el paquete completo:
+```
+sudo apt install docker-compose
+```
+Error de permisos:
+bash
+## Agregar tu usuario al grupo docker (si no lo hiciste)
+```
+sudo usermod -aG docker $USER
+```
+
+## Cerrar sesión y volver a conectar al VPS
+exit
+## Reconectar via SSH
+
+## Verificar que tienes permisos
+docker compose version
+# 🚀 Comandos corregidos para tu proyecto MySQL
+Desplegar MySQL:
+bash
+```
+cd ~/mysql-docker
+docker compose up -d
+```
+Ver estado:
+bash
+```
+docker compose ps
+```
+Ver logs:
+bash
+```
+docker compose logs -f mysql
+```
+Conectar a MySQL:
+bash
+```
+docker exec -it mysql-produccion mysql -u root -p
+```
+Detener:
+bash
+```
+docker compose down
+```
+# 📋 Verificación completa
+bash
+## Verificar que todo funciona
+```
+docker --version
+docker compose version
+docker compose ps
+```
+Deberías ver algo como:
+
+text
+```
+Docker version 24.0.6
+Docker Compose version v2.21.0
+NAME                COMMAND                  SERVICE             STATUS              PORTS
+mysql-produccion    "docker-entrypoint.s…"   mysql               running             0.0.0.0:3306->3306/tcp
+```
+# ❓ ¿Por qué el cambio?
+Docker Compose V1 (python): Comando separado docker-compose
+
+Docker Compose V2 (go): Integrado como plugin docker compose
+
+La versión V2 es más rápida y está mejor integrada con Docker.
+
+# 🔧 Si prefieres instalar la versión antigua:
+* Recomiendamos  usar el plugin ya que es el estándar actual.
+bash
+## Instalar docker-compose (V1 legacy)
+```
+sudo apt install docker-compose
+```
+
+## Verificar
+```
+docker-compose --version
+```
