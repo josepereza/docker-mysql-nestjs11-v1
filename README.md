@@ -199,7 +199,7 @@ docker-compose up -d
 docker-compose ps
 docker-compose logs -f app
 ```
-🔧 6. Configuración de TypeORM para Producción
+# 🔧 6. Configuración de TypeORM para Producción
 📄 ormconfig.js (configuración adicional)
 javascript
 ```
@@ -219,6 +219,8 @@ module.exports = {
   },
 };
 ```
+
+
 
 # 7. Script de Inicialización de Base de Datos
 📄 init.sql (opcional - para datos iniciales)
@@ -366,3 +368,211 @@ typescript
 })
 
 ```
+
+# 🔧 2. Configurar MySQL para Conexiones Externas
+## 📄 my-custom.cnf (configuración personalizada)
+```
+[mysqld]
+bind-address = 0.0.0.0
+skip-name-resolve
+max_connections = 1000
+```
+## docker-compose.yml con configuración personalizada:
+```
+mysql:
+  image: mysql:8.0
+  environment:
+    MYSQL_ROOT_PASSWORD: mysql_password
+    MYSQL_DATABASE: nestapp
+  ports:
+    - "3306:3306"
+  volumes:
+    - mysql_data:/var/lib/mysql
+    - ./my-custom.cnf:/etc/mysql/conf.d/custom.cnf  # ← Config personalizada
+  command: 
+    - --bind-address=0.0.0.0
+    - --max_connections=1000
+
+   ``` 
+# 🌐 3. Conectar desde el Exterior
+Desde tu máquina local:
+bash
+## Con MySQL Client
+mysql -h TU_VPS_IP -P 3306 -u root -p
+
+## Con herramienta gráfica (DBeaver, MySQL Workbench, etc.)
+* Host: TU_VPS_IP
+* Port: 3306
+* User: root
+* Password: mysql_password
+## Desde otra aplicación:
+javascript
+// Ejemplo en Node.js
+```
+const connection = mysql.createConnection({
+  host: 'TU_VPS_IP',
+  port: 3306,
+  user: 'root',
+  password: 'mysql_password',
+  database: 'nestapp'
+});
+```
+# 🛡️ 4. Configuración de Seguridad (IMPORTANTE)
+## crear usuario con permisos específicos:
+sql
+-- Conectarse al contenedor MySQL
+```
+docker exec -it nombre_contenedor_mysql mysql -u root -p
+```
+-- Ejecutar estos comandos:
+```
+CREATE USER 'usuario_externo'@'%' IDENTIFIED BY 'password_seguro';
+GRANT SELECT, INSERT, UPDATE, DELETE ON nestapp.* TO 'usuario_externo'@'%';
+FLUSH PRIVILEGES;
+```
+-- O más restrictivo (solo desde IP específica)
+```
+CREATE USER 'usuario_seguro'@'192.168.1.100' IDENTIFIED BY 'password_seguro';
+GRANT SELECT ON nestapp.* TO 'usuario_seguro'@'192.168.1.100';
+📄 init.sql (para crear usuarios automáticamente)
+```
+sql
+-- Crear usuario para acceso externo
+```
+CREATE USER IF NOT EXISTS 'externo'@'%' IDENTIFIED BY 'PasswordExterno123';
+GRANT SELECT, INSERT, UPDATE, DELETE ON nestapp.* TO 'externo'@'%';
+```
+-- Crear usuario solo para aplicación
+```
+
+CREATE USER IF NOT EXISTS 'app_user'@'%' IDENTIFIED BY 'PasswordApp123';
+GRANT ALL PRIVILEGES ON nestapp.* TO 'app_user'@'%';
+
+FLUSH PRIVILEGES;
+```
+## docker-compose.yml con init script:
+yaml
+```
+mysql:
+  image: mysql:8.0
+  environment:
+    MYSQL_ROOT_PASSWORD: mysql_password
+    MYSQL_DATABASE: nestapp
+  ports:
+    - "3306:3306"
+  volumes:
+    - mysql_data:/var/lib/mysql
+    - ./init.sql:/docker-entrypoint-initdb.d/init.sql  # ← Script inicial
+ ```   
+#  🔥 5. Configurar Firewall en el VPS
+bash
+## Permitir conexiones MySQL desde cualquier IP
+```
+sudo ufw allow 3306/tcp
+```
+## O solo desde tu IP específica (MÁS SEGURO)
+```
+sudo ufw allow from TU_IP_PERSONAL to any port 3306
+```
+
+## Recargar firewall
+sudo ufw reload
+
+## Verificar reglas
+```
+sudo ufw status numbered
+```
+# 🚀 6. Probar la Conexión Externa
+Desde tu máquina local:
+bash
+## Test de conexión básica
+```
+telnet TU_VPS_IP 3306
+```
+
+## Conectar con cliente MySQL
+```
+mysql -h TU_VPS_IP -P 3306 -u externo -p
+```
+
+## Ver bases de datos
+```
+SHOW DATABASES;
+```
+
+## Usar la base de datos
+```
+USE nestapp;
+SHOW TABLES;
+```
+# ⚠️ 7. Consideraciones de Seguridad CRÍTICAS
+NO hacer esto (inseguro):
+yaml
+## ❌ MUY PELIGROSO
+```
+mysql:
+  environment:
+    MYSQL_ROOT_PASSWORD: admin123  # Password débil
+  ports:
+    - "3306:3306"  # Expuesto sin restricciones
+
+```    
+SÍ hacer esto (seguro):
+yaml
+## ✅ CONFIGURACIÓN SEGURA
+```
+mysql:
+  environment:
+    MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}  # Desde variable de entorno
+  ports:
+    - "3306:3306"
+  volumes:
+    - ./init.sql:/docker-entrypoint-initdb.d/init.sql  # Crear usuarios seguros
+ ```
+Variables de entorno seguras (.env):
+env
+## Archivo .env (NO subir a Git)
+```
+DB_ROOT_PASSWORD=TuPasswordSuperSeguro123!
+DB_APP_PASSWORD=OtroPasswordSeguro456!
+```
+🛠️ 8. Comandos Útiles para Administración
+bash
+## Ver logs de MySQL
+```
+docker-compose logs -f mysql
+```
+## Conectar al contenedor MySQL
+```
+docker exec -it mi-app-mysql-1 mysql -u root -p
+```
+## Backup de la base de datos
+```
+docker exec mi-app-mysql-1 mysqldump -u root -p nestapp > backup.sql
+```
+## Restaurar backup
+```
+docker exec -i mi-app-mysql-1 mysql -u root -p nestapp < backup.sql
+```
+## Ver conexiones activas
+```
+docker exec -it mi-app-mysql-1 mysql -u root -p -e "SHOW PROCESSLIST;"
+```
+# 🔄 9. Alternativa: Usar SSH Tunnel (Más Seguro)
+Si no quieres exponer MySQL directamente:
+
+bash
+## Crear túnel SSH desde tu local
+ssh -L 3307:localhost:3306 usuario@TU_VPS_IP
+
+## Ahora puedes conectar localmente
+```
+mysql -h 127.0.0.1 -P 3307 -u root -p
+```
+### URLs de acceso:
+
+MySQL Directo: mysql -h TU_VPS_IP -P 3306 -u root -p
+
+PHPMyAdmin: http://TU_VPS_IP:8080 (si lo incluyes en docker-compose)
+
+Tu API NestJS: http://TU_VPS_IP:3000
