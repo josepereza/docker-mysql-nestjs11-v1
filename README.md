@@ -70,6 +70,7 @@ Ahora crearás un contenedor personalizado usando un Dockerfile.
 Crear un Dockerfile: En tu máquina local, crea un directorio y un archivo llamado Dockerfile.
 
 dockerfile
+```
 ## Usa una imagen base oficial de Node.js
 FROM node:18
 ## Establece el directorio de trabajo dentro del contenedor
@@ -84,7 +85,7 @@ COPY . .
 EXPOSE 3000
 ## Comando para ejecutar la aplicación
 CMD ["node", "server.js"]
-
+```
 * Construir la Imagen Docker: En el mismo directorio que tu Dockerfile, ejecuta:
 
 bash
@@ -144,17 +145,19 @@ Aquí tienes una referencia rápida de comandos útiles para gestionar tus conte
 📄 .env.docker (variables para Docker)
 env
 ## Database
+```
 DB_HOST=mysql
 DB_PORT=3306
 DB_USERNAME=root
 DB_PASSWORD=mysql_password
 DB_DATABASE=nestapp
-
+```
 ## App
 NODE_ENV=production
 PORT=3000
 📄 src/app.module.ts (configuración TypeORM)
 typescript
+```bash
 @Module({
   imports: [
     TypeOrmModule.forRoot({
@@ -172,7 +175,7 @@ typescript
   ],
 })
 export class AppModule {}
-
+```
 # 5. Configuración en el VPS
 Subir archivos al VPS:
 bash
