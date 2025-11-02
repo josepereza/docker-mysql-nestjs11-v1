@@ -1,4 +1,6 @@
 [mysqld]
 bind-address = 0.0.0.0
-skip-name-resolve
 max_connections = 1000
+innodb_buffer_pool_size = 1G
+query_cache_size = 128M
+slow_query_log = 1
